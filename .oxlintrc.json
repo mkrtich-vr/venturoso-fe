@@ -1,0 +1,122 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react", "unicorn", "oxc", "import", "promise", "jsx-a11y", "vitest"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error"
+  },
+  "ignorePatterns": ["dist", "coverage", "node_modules"],
+  "env": {
+    "browser": true,
+    "es2024": true
+  },
+  "rules": {
+    // File-length budget. Split a file once it passes this; see CLAUDE.md §1.
+    "max-lines": ["error", { "max": 200, "skipBlankLines": true, "skipComments": true }],
+    // Function-length budget for logic. JSX components get a larger budget in
+    // the *.tsx override below — a declarative element tree is not the same
+    // thing as a function "doing too many jobs".
+    "max-lines-per-function": [
+      "error",
+      { "max": 50, "skipBlankLines": true, "skipComments": true }
+    ],
+
+    "react/no-array-index-key": "error",
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "error",
+    "react/only-export-components": "warn",
+    // Legacy JSX runtime only. This project compiles with jsx: "react-jsx"
+    // (React 19 automatic runtime), where React need not be in scope.
+    "react/react-in-jsx-scope": "off",
+
+    // Side-effect imports are the correct form for global CSS and test setup.
+    "import/no-unassigned-import": "off",
+
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/await-thenable": "error",
+    "typescript/no-unsafe-assignment": "error",
+    "typescript/no-unsafe-argument": "error",
+    "typescript/no-unsafe-call": "error",
+    "typescript/no-unsafe-member-access": "error",
+    "typescript/no-unsafe-return": "error",
+    "typescript/no-explicit-any": "error",
+    "typescript/consistent-type-imports": [
+      "error",
+      { "prefer": "type-imports", "fixStyle": "inline-type-imports" }
+    ],
+
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }]
+  },
+  "overrides": [
+    {
+      // JSX inflates line counts without adding responsibilities. Still bounded,
+      // just at a threshold that reflects how components are actually written.
+      "files": ["**/*.tsx"],
+      "rules": {
+        "max-lines-per-function": [
+          "error",
+          { "max": 100, "skipBlankLines": true, "skipComments": true }
+        ]
+      }
+    },
+    {
+      "files": ["src/pages/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/app", "@/app/*"],
+                "message": "FSD: pages must not import from app. Imports only travel downward (app -> pages -> shared)."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/shared/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/app", "@/app/*", "@/pages", "@/pages/*"],
+                "message": "FSD: shared is the lowest layer and must not import from any layer above it."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      // Vendored shadcn source — held to correctness, not to our house style.
+      "files": ["src/shared/ui/**"],
+      "rules": {
+        "react/only-export-components": "off",
+        "max-lines": "off",
+        "max-lines-per-function": "off"
+      }
+    },
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx", "vitest.setup.ts"],
+      "rules": {
+        "max-lines-per-function": "off"
+      }
+    },
+    {
+      "files": ["*.config.ts", "*.config.js", "vitest.setup.ts"],
+      "env": { "node": true },
+      "rules": {
+        "typescript/no-unsafe-assignment": "off",
+        "typescript/no-unsafe-argument": "off",
+        "typescript/no-unsafe-call": "off",
+        "typescript/no-unsafe-member-access": "off"
+      }
+    }
+  ]
+}

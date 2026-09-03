@@ -18,7 +18,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
     apply()
 
-    if (theme !== 'system') return
+    // Only the 'system' preference needs to keep listening; the other two are
+    // one-shot. Explicit `undefined` keeps every branch returning a value.
+    if (theme !== 'system') return undefined
 
     const media = window.matchMedia('(prefers-color-scheme: dark)')
     media.addEventListener('change', apply)

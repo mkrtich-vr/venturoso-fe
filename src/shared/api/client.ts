@@ -47,5 +47,9 @@ export async function apiRequest<TResponse>(
     )
   }
 
+  // `response.json()` is `any` by definition — this is the trust boundary where
+  // an untyped payload becomes a typed one. Validate with a schema library here
+  // if the API ever stops being trusted.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
   return (await response.json()) as TResponse
 }

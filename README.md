@@ -9,19 +9,24 @@ API; swap `VITE_API_URL` when the real backend exists.
 
 ## Stack
 
-| Concern      | Choice                                                           |
-| ------------ | ---------------------------------------------------------------- |
-| Build        | Vite 8 · React 19 · TypeScript 6                                 |
-| Architecture | Feature-Sliced Design v2.1 (+ Steiger linter)                    |
-| Routing      | React Router 8 — **Data mode** (`createBrowserRouter`)           |
-| Server state | TanStack Query 5                                                 |
-| Client state | Zustand 5                                                        |
-| UI           | shadcn (**Base UI** primitives) + Tailwind v4                    |
-| Quality      | ESLint 10 (type-aware) · Prettier 3 · Vitest 5 + Testing Library |
+| Concern      | Choice                                                        |
+| ------------ | ------------------------------------------------------------- |
+| Build        | Vite 8 · React 19 · TypeScript 7                              |
+| Architecture | Feature-Sliced Design v2.1 (+ Steiger linter)                 |
+| Routing      | React Router 8 — **Data mode** (`createBrowserRouter`)        |
+| Server state | TanStack Query 5                                              |
+| Client state | Zustand 5                                                     |
+| UI           | shadcn (**Base UI** primitives) + Tailwind v4                 |
+| Quality      | oxlint (type-aware) · Prettier 3 · Vitest 5 + Testing Library |
 
-> TypeScript is pinned to `~6.0.3` on purpose. typescript-eslint 8.x declares
-> peer support for `typescript >=4.8.4 <6.1.0`, so moving to TS 7 would force
-> every type-aware lint rule to be switched off.
+> **Linting is oxlint, not ESLint.** Type-aware rules
+> (`no-floating-promises`, `no-misused-promises`, the `no-unsafe-*` family) run
+> via `oxlint-tsgolint`, which ships its own typescript-go binary and has no
+> dependency on the project's `typescript` version. A full type-aware lint of
+> this codebase takes ~0.25s.
+>
+> Because oxlint's type checking is self-contained, TypeScript is free to track
+> latest — there is no peer-range ceiling to respect.
 
 ## Prerequisites
 
@@ -52,8 +57,8 @@ npm run dev
 | `npm run build`                   | Typecheck (`tsc -b`) then production build |
 | `npm run preview`                 | Serve the production build locally         |
 | `npm run typecheck`               | TypeScript only, no emit                   |
-| `npm run lint`                    | ESLint, including type-aware rules         |
-| `npm run lint:fix`                | ESLint with autofix                        |
+| `npm run lint`                    | oxlint, including type-aware rules         |
+| `npm run lint:fix`                | oxlint with autofix                        |
 | `npm run lint:fsd`                | Steiger — validates the FSD structure      |
 | `npm run format` / `format:check` | Prettier                                   |
 | `npm test`                        | Vitest (watch)                             |
@@ -76,8 +81,13 @@ src/
 
 **Import direction is strictly downward: `app → pages → shared`.** Same-layer
 cross-imports are forbidden. This is enforced twice — Steiger checks the
-structure, and ESLint `no-restricted-imports` catches a wrong direction inline
-while you type.
+structure, and oxlint's `no-restricted-imports` overrides catch a wrong
+direction inline while you type.
+
+**Size budgets are enforced, not just documented**: `max-lines` caps files at
+200, and `max-lines-per-function` caps logic at 50 lines (100 in `.tsx`, where
+a JSX tree inflates the count without adding responsibilities). Vendored
+`shared/ui` components are exempt.
 
 **Public API.** Each `pages/*` slice exposes exactly one `index.ts`; importing
 past it is a violation. The `shared` layer has no slices, so it gets one barrel

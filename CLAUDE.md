@@ -11,7 +11,7 @@ See [README.md](./README.md) for the stack, setup and architecture overview.
 
 ## 0. Project facts
 
-- **Stack**: Vite 8 · React 19 · TypeScript 6 · React Router 8 (Data mode) ·
+- **Stack**: Vite 8 · React 19 · TypeScript 7 · React Router 8 (Data mode) ·
   TanStack Query 5 · Zustand 5 · shadcn (Base UI) + Tailwind v4 · Vitest 5.
 - **Node ≥ 22.12** (Vitest 5 requires it); developed on Node 24 via nvm.
 - **Layers present**: `app`, `pages`, `shared` only. Do **not** create
@@ -21,9 +21,20 @@ See [README.md](./README.md) for the stack, setup and architecture overview.
   `tsconfig.app.json`; Vite reads them via `resolve.tsconfigPaths`. Mirrored in
   the root `tsconfig.json` only because the shadcn CLI resolves aliases there.
 - **Example API**: `https://dummyjson.com` via `VITE_API_URL`.
-- **TypeScript is pinned to `~6.0.3`.** Do not upgrade to 7.x —
-  typescript-eslint 8.x peer-caps at `<6.1.0`, and exceeding it silently
-  disables every type-aware lint rule.
+- **Linting is oxlint, not ESLint** (`.oxlintrc.json`). Always run it as
+  `oxlint --type-aware` — that is what `npm run lint` does. Without the flag,
+  type-aware rules like `no-floating-promises` silently do not run.
+  `oxlint-tsgolint` supplies its own typescript-go binary, so type-aware
+  linting is independent of the project's `typescript` version.
+- **Steiger's config must stay `steiger.config.js`, not `.ts`.** Steiger loads
+  config through cosmiconfig, whose TypeScript loader calls
+  `typescript.findConfigFile()` — an API TypeScript 7 no longer exposes, so a
+  `.ts` config crashes on startup. A plain ESM `.js` config avoids the loader
+  entirely. Revisit once cosmiconfig supports TS 7.
+- **Size budgets are enforced by the linter**: `max-lines` 200 per file;
+  `max-lines-per-function` 50, raised to 100 in `.tsx`. Do not silence these to
+  make a change fit — split the file or the function, which is the point.
+  `src/shared/ui/**` is exempt as vendored shadcn source.
 - **shadcn uses Base UI, not Radix.** Custom triggers use `render={<Link />}`,
   not `asChild`. Rendering a Button as a non-button element also needs
   `nativeButton={false}`, or Base UI logs an accessibility error.
@@ -138,11 +149,15 @@ npm run lint:fsd && npm run test:run && npm run format:check`.
 ## Extending this doc
 
 This is intentionally a starting baseline, not exhaustive. Natural next
-additions as the project grows: state-management-library conventions beyond
-TanStack Query, form-handling conventions, styling conventions (if not using
-shadcn's defaults), CI/lint enforcement for the rules above (e.g. wiring
-`max-lines`, `react/no-multi-comp`, `react/no-array-index-key` into ESLint so
-these stop being just documentation).
+additions as the project grows: state-management conventions beyond TanStack
+Query, form-handling conventions, and styling conventions past shadcn's
+defaults.
+
+The mechanical rules above are already enforced rather than merely documented —
+`max-lines`, `max-lines-per-function`, `react/no-array-index-key`,
+`react/rules-of-hooks` and the FSD import-direction restrictions all live in
+`.oxlintrc.json`, with structure checked separately by `steiger`. When you add a
+rule here, wire it into the linter in the same change, or it will not hold.
 
 ## Sources
 
@@ -150,8 +165,9 @@ these stop being just documentation).
   State Logic into a Reducer, Sharing State Between Components, Passing Data
   Deeply with Context, Rendering Lists, Error Boundaries
 - Airbnb React/JSX Style Guide (github.com/airbnb/javascript/tree/master/react)
-- ESLint — `max-lines`, `max-lines-per-function`; eslint-plugin-react —
-  `no-multi-comp`, `no-array-index-key`
+- Rule provenance: `max-lines` / `max-lines-per-function` originate as ESLint
+  core rules and `no-array-index-key` as an eslint-plugin-react rule; this
+  project runs the oxlint ports of all three
 - Kent C. Dodds — Colocation; State Colocation will make your React app faster
 - TkDodo — Please Stop Using Barrel Files
 - Dan Abramov — Presentational and Container Components (2019 update note)

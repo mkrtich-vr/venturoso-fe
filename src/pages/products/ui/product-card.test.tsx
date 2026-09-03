@@ -18,7 +18,10 @@ const product: Product = {
   images: [],
 }
 
-function renderCard(overrides: Partial<Product> = {}, onDiscount = vi.fn()) {
+function renderCard(
+  overrides: Partial<Product> = {},
+  onDiscount = vi.fn<(product: Product) => void>(),
+) {
   render(
     <MemoryRouter>
       <ProductCard

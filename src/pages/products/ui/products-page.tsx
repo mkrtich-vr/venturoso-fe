@@ -2,18 +2,11 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import type { Product } from '@/shared/api'
 import { productQueries } from '@/shared/api'
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  Skeleton,
-} from '@/shared/ui'
+import { Alert, AlertDescription, AlertTitle } from '@/shared/ui'
 import { useUpdateProduct } from '../api/use-update-product'
+import { PaginationControls } from './pagination-controls'
 import { ProductCard } from './product-card'
+import { ProductCardSkeleton } from './product-list-skeleton'
 
 const PAGE_SIZE = 6
 
@@ -71,46 +64,12 @@ export function ProductsPage() {
             ))}
       </div>
 
-      <div className="flex items-center gap-3">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={page === 0}
-          onClick={() => {
-            setPage((current) => Math.max(0, current - 1))
-          }}
-        >
-          Previous
-        </Button>
-        <span className="text-sm text-muted-foreground">
-          Page {String(page + 1)}
-          {totalPages > 0 && ` of ${String(totalPages)}`}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={isPlaceholderData || (totalPages > 0 && page + 1 >= totalPages)}
-          onClick={() => {
-            setPage((current) => current + 1)
-          }}
-        >
-          Next
-        </Button>
-      </div>
+      <PaginationControls
+        page={page}
+        totalPages={totalPages}
+        canGoNext={!isPlaceholderData && !(totalPages > 0 && page + 1 >= totalPages)}
+        onPageChange={setPage}
+      />
     </div>
-  )
-}
-
-function ProductCardSkeleton() {
-  return (
-    <Card>
-      <CardHeader>
-        <Skeleton className="h-5 w-3/4" />
-      </CardHeader>
-      <CardContent className="flex flex-col gap-2">
-        <Skeleton className="h-6 w-24" />
-        <Skeleton className="h-5 w-32" />
-      </CardContent>
-    </Card>
   )
 }
