@@ -1,28 +1,54 @@
 # CLAUDE.md
 
-> **Status**: pending placement. This repo will hold a React + Vite app
-> (Feature-Sliced Design). The app hasn't been scaffolded yet — once it is,
-> move/merge this file's content into its final location and adjust as the
-> project's actual conventions settle. Until then, treat everything below as
-> the baseline AI rules for this codebase.
+Coding rules for this repo. Built to sit on top of **Feature-Sliced Design** and
+the Claude Code skills installed locally (`feature-sliced-design`,
+`vercel-composition-patterns`, `vercel-react-best-practices`, `shadcn`,
+`typescript-expert`, `tanstack-query-best-practices`, `react-router`). This file
+is the glue between them, not a replacement — where a rule below is covered in
+more depth by one of those skills, it points there instead of repeating it.
 
-Abstract, project-agnostic baseline for React work here — not tied to specific
-features. Built to sit on top of **Feature-Sliced Design** and the Claude Code
-skills already installed (`feature-sliced-design`, `vercel-composition-patterns`,
-`vercel-react-best-practices`, `shadcn`, `typescript-expert`,
-`tanstack-query-best-practices`). This file is the glue between them, not a
-replacement — where a rule below is covered in more depth by one of those
-skills, it points there instead of repeating it. Extend this over time with
-real project/team conventions as they emerge.
+See [README.md](./README.md) for the stack, setup and architecture overview.
+
+## 0. Project facts
+
+- **Stack**: Vite 8 · React 19 · TypeScript 6 · React Router 8 (Data mode) ·
+  TanStack Query 5 · Zustand 5 · shadcn (Base UI) + Tailwind v4 · Vitest 5.
+- **Node ≥ 22.12** (Vitest 5 requires it); developed on Node 24 via nvm.
+- **Layers present**: `app`, `pages`, `shared` only. Do **not** create
+  `entities/`, `features/` or `widgets/` until something is genuinely reused —
+  empty layer folders are an explicit FSD anti-pattern.
+- **Aliases**: one per layer — `@/app`, `@/pages`, `@/shared`. Declared once in
+  `tsconfig.app.json`; Vite reads them via `resolve.tsconfigPaths`. Mirrored in
+  the root `tsconfig.json` only because the shadcn CLI resolves aliases there.
+- **Example API**: `https://dummyjson.com` via `VITE_API_URL`.
+- **TypeScript is pinned to `~6.0.3`.** Do not upgrade to 7.x —
+  typescript-eslint 8.x peer-caps at `<6.1.0`, and exceeding it silently
+  disables every type-aware lint rule.
+- **shadcn uses Base UI, not Radix.** Custom triggers use `render={<Link />}`,
+  not `asChild`. Rendering a Button as a non-button element also needs
+  `nativeButton={false}`, or Base UI logs an accessibility error.
+
+Before finishing any change, run: `npm run typecheck && npm run lint &&
+npm run lint:fsd && npm run test:run && npm run format:check`.
+
+## 0.1 State boundary
+
+- **TanStack Query owns all server state.** `queryOptions` factories with
+  hierarchical `as const` keys live in `shared/api/<resource>/*.queries.ts`;
+  mutations live near their point of use in `pages/*/api/use-*.ts`.
+- **Zustand owns client state** (`shared/theme` is the worked example). Never
+  cache API responses in a Zustand store.
+- **React Router uses no `loader`/`action` by design** — Query owns fetching, so
+  loaders would double-fetch and fight the cache. Routes code-split via `lazy`.
 
 ## 1. Structure
 
 - **Architecture**: use Feature-Sliced Design for layers/slices/segments — see
   the `feature-sliced-design` skill for the full decision tree.
-- **One component per file.** Filename matches the exported component
-  (PascalCase), e.g. `ProductCard.tsx` exports `ProductCard`. A small,
-  tightly-coupled subcomponent used only by its parent may stay in the same
-  file; anything reused or non-trivial gets its own file.
+- **One component per file.** The filename names the component it exports —
+  `product-card.tsx` exports `ProductCard` (see §2 for the casing rule). A
+  small, tightly-coupled subcomponent used only by its parent may stay in the
+  same file; anything reused or non-trivial gets its own file.
 - **Keep files short — split once a file passes ~200 lines.** Treat this as a
   team-adjustable default, not a law: ESLint's own `max-lines` rule defaults to
   300, and reputable guidance ranges 100–500 depending on the codebase. Start
@@ -38,9 +64,14 @@ real project/team conventions as they emerge.
 
 ## 2. Naming & Imports
 
-- **Components**: PascalCase, filename matches the export.
-- **Hooks**: camelCase, must start with `use` — this isn't style, React's own
-  rules-of-hooks linting depends on the prefix to recognize it as a hook.
+- **Component identifiers are PascalCase; filenames are kebab-case.**
+  `product-card.tsx` exports `ProductCard`. This project standardises on
+  kebab-case files throughout — it matches both shadcn's generated components
+  and FSD's domain-based naming, and avoids case-sensitivity surprises between
+  macOS and CI.
+- **Hooks**: camelCase identifier starting with `use` (`useUpdateProduct`) in a
+  kebab-case file (`use-update-product.ts`). The `use` prefix isn't style —
+  React's rules-of-hooks lint depends on it to recognise a hook.
 - **Everything else (model/api/lib files): domain-based names, never
   technical-role names** (`types.ts`, `utils.ts`, `helpers.ts`) — this is FSD
   rule 4-4; apply it project-wide, not just inside FSD slices.
@@ -53,10 +84,12 @@ real project/team conventions as they emerge.
   something, not from a convenience `index.ts` grab-bag inside `ui/`, `hooks/`,
   etc. — barrels force bundlers to evaluate everything they re-export, which
   measurably slows dev servers and can cause circular-import breakage (see
-  `vercel-react-best-practices` → `bundle-barrel-imports`). **The one
-  exception is FSD's own required slice-level `index.ts` Public API** — that's
-  a single, deliberate boundary per slice, not a general-purpose barrel, and
-  it's the reason FSD's import rules work at all.
+  `vercel-react-best-practices` → `bundle-barrel-imports`). **The one exception
+  is FSD's required Public API** — one `index.ts` per `pages/*` slice, and, since
+  `shared` has no slices, one per `shared` _segment_ (`shared/api`, `shared/ui`,
+  `shared/lib`, `shared/theme`, `shared/config`). Note there is deliberately no
+  top-level `shared/index.ts`. These are single deliberate boundaries, not
+  convenience grab-bags, and they are what makes FSD's import rules work.
 - **Use path aliases (`@/...`)** instead of long relative `../../../` chains —
   already implied by FSD's own examples.
 

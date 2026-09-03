@@ -1,0 +1,15 @@
+{
+  "files": [],
+  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }],
+  /* Mirrored from tsconfig.app.json purely so tooling that reads the ROOT
+     tsconfig can resolve the FSD aliases. The shadcn CLI does exactly this —
+     without these it cannot resolve "@/shared/ui" and silently writes
+     components into a literal "@" directory instead. */
+  "compilerOptions": {
+    "paths": {
+      "@/app/*": ["./src/app/*"],
+      "@/pages/*": ["./src/pages/*"],
+      "@/shared/*": ["./src/shared/*"]
+    }
+  }
+}
